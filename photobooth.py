@@ -15,7 +15,6 @@ import sys
 import socket
 import pygame
 from pygame.locals import QUIT, KEYDOWN, K_ESCAPE
-import pytumblr  # https://github.com/tumblr/pytumblr
 import config  # this is the config python file config.py
 import cups
 
@@ -32,7 +31,6 @@ capture_delay = 1  # delay between pics
 prep_delay = 3  # number of seconds at step 1 as users prep to have photo taken
 gif_delay = 100  # How much time between frames in the animated gif
 restart_delay = 5  # how long to display finished message before beginning a new session
-test_server = 'www.google.com'
 
 # full frame of v1 camera is 2592x1944. Wide screen max is 2592,1555
 # if you run into resource issues, try smaller, like 1920x1152.
@@ -80,15 +78,6 @@ if not config.camera_landscape:
 # Other Config #
 ################
 real_path = os.path.dirname(os.path.realpath(__file__))
-
-# Setup the tumblr OAuth Client
-if config.post_online:  # turn off posting pics online in config.py
-    client = pytumblr.TumblrRestClient(
-        config.consumer_key,
-        config.consumer_secret,
-        config.oath_token,
-        config.oath_secret,
-    )
 
 # GPIO setup
 GPIO.setmode(GPIO.BCM)
@@ -151,24 +140,6 @@ def clear_pics(channel):
         sleep(0.25)
         GPIO.output(led_pin, False)
         sleep(0.25)
-
-
-def is_connected():
-    """
-    @brief      Determines if connected to the internet
-    @return     True if connected, False otherwise.
-    """
-    try:
-        # see if we can resolve the host name -- tells us if there is a DNS
-        # listening
-        host = socket.gethostbyname(test_server)
-        # connect to the host -- tells us if the host is actually
-        # reachable
-        socket.create_connection((host, 80), 2)
-        return True
-    except:
-        pass
-    return False
 
 
 def set_demensions(img_w, img_h):
@@ -284,17 +255,8 @@ def start_photobooth():
         camera.saturation = -100
     camera.iso = config.camera_iso
 
-    pixel_width = 0  # local variable declaration
-    pixel_height = 0  # local variable declaration
-
-    if config.hi_res_pics:
-        # set camera resolution to high res
-        camera.resolution = (high_res_w, high_res_h)
-    else:
-        pixel_width = 500  # maximum width of animated gif on tumblr
-        pixel_height = config.monitor_h * pixel_width // config.monitor_w
-        # set camera resolution to low res
-        camera.resolution = (pixel_width, pixel_height)
+    # set camera resolution to high res
+    camera.resolution = (high_res_w, high_res_h)
 
     #
     #  Begin Step 2
@@ -363,76 +325,14 @@ def start_photobooth():
 
     print "Creating an animated gif"
 
-    if config.post_online:
-        show_image(real_path + "/uploading.png")
-    else:
-        show_image(real_path + "/processing.png")
+    show_image(real_path + "/processing.png")
 
     if config.make_gifs:  # make the gifs
-        if config.hi_res_pics:
-            # first make a small version of each image. Tumblr's max animated
-            # gif's are 500 pixels wide.
-            for x in range(1, total_pics + 1):  # batch process all the images
-                graphicsmagick = "gm convert -size 500x500 " + config.file_path + now + "-0" + \
-                    str(x) + ".jpg -thumbnail 500x500 " + \
-                    config.file_path + now + "-0" + str(x) + "-sm.jpg"
-                os.system(graphicsmagick)  # do the graphicsmagick action
-
-            graphicsmagick = "gm convert -delay " + \
-                str(gif_delay) + " " + config.file_path + now + \
-                "*-sm.jpg " + config.file_path + now + ".gif"
-            os.system(graphicsmagick)  # make the .gif
-        else:
-            # make an animated gif with the low resolution images
-            graphicsmagick = "gm convert -delay " + \
-                str(gif_delay) + " " + config.file_path + now + \
-                "*.jpg " + config.file_path + now + ".gif"
-            os.system(graphicsmagick)  # make the .gif
-
-    if config.post_online:  # turn off posting pics online in config.py
-        # check to see if you have an internet connection
-        connected = is_connected()
-
-        if not connected:
-            print "bad internet connection"
-
-        while connected:
-            if config.make_gifs:
-                try:
-                    file_to_upload = config.file_path + now + ".gif"
-                    client.create_photo(config.tumblr_blog, state="published", tags=[
-                                        config.tagsForTumblr], data=file_to_upload)
-                    break
-                except ValueError:
-                    print "Oops. No internect connection. Upload later."
-                    try:  # make a text file as a note to upload the .gif later
-                        # Trying to create a new file or open one
-                        file = open(config.file_path + now +
-                                    "-FILENOTUPLOADED.txt", 'w')
-                        file.close()
-                    except:
-                        print('Something went wrong. Could not write file.')
-                        sys.exit(0)  # quit Python
-            else:  # upload jpgs instead
-                try:
-                    # create an array and populate with file paths to our jpgs
-                    myJpgs = [0 for i in range(4)]
-                    for i in range(4):
-                        myJpgs[i] = config.file_path + \
-                            now + "-0" + str(i + 1) + ".jpg"
-                    client.create_photo(config.tumblr_blog, state="published", tags=[
-                                        config.tagsForTumblr], format="markdown", data=myJpgs)
-                    break
-                except ValueError:
-                    print "Oops. No internect connection. Upload later."
-                    try:  # make a text file as a note to upload the .gif later
-                        # Trying to create a new file or open one
-                        file = open(config.file_path + now +
-                                    "-FILENOTUPLOADED.txt", 'w')
-                        file.close()
-                    except:
-                        print('Something went wrong. Could not write file.')
-                        sys.exit(0)  # quit Python
+        # make an animated gif
+        graphicsmagick = "gm convert -delay " + \
+            str(gif_delay) + " " + config.file_path + now + \
+            "*.jpg " + config.file_path + now + ".gif"
+        os.system(graphicsmagick)  # make the .gif
 
     if config.make_photobooth_image:
         print("Creating a photo booth picture")
@@ -454,10 +354,7 @@ def start_photobooth():
 
     print "Done"
 
-    if config.post_online:
-        show_image(real_path + "/finished.png")
-    else:
-        show_image(real_path + "/finished2.png")
+    show_image(real_path + "/finished.png")
 
     time.sleep(restart_delay)
     show_image(real_path + "/intro.png")
