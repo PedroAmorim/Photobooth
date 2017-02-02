@@ -1,4 +1,5 @@
-# Photobooth
+Photobooth
+=============
 Photobooth project for RaspberryPi with PiCamera and CUPS printer!
 
 This projet is initialy a fork of [drumminhands/drumminhands_photobooth](https://github.com/drumminhands/drumminhands_photobooth).  
@@ -12,6 +13,7 @@ Thanks drumminhands to the initial project, it’s simple and really efficient! 
 ### This requires:
 * PiCamera -- http://picamera.readthedocs.org/
 * CUPS -- https://www.cups.org/
+* GraphicsMagick -- http://www.graphicsmagick.org/
 
 ### Instructions:
 * Create your own config
@@ -21,11 +23,14 @@ Thanks drumminhands to the initial project, it’s simple and really efficient! 
 * Connect GPIO buttons and leds: WIP
 
 ### Credits:
-##### Icons from the Noun Project
+##### Icons from the [Noun Project](https://thenounproject.com/)
 Hamster wheel by Dream Icons  
 Yoga poses by Claire Jones  
 
-##### Sound from Freesound.org
-CakeBrawl camera shutter.
-https://www.freesound.org/people/CakeBrawl/sounds/253342/
+##### Images from Freepik
+Photobooth mustache and glasses [designed by smithytomy / Freepik](http://www.freepik.com)
+
+##### Sounds from Freesound.org
+Camera shutter by [CakeBrawl](https://www.freesound.org/people/CakeBrawl/sounds/253342/)
+
 
