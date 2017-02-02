@@ -180,13 +180,14 @@ def set_demensions(img_w, img_h):
         transform_y = config.monitor_h
         offset_y = offset_x = 0
 
-# uncomment these lines to troubleshoot screen ratios
-#     print str(img_w) + " x " + str(img_h)
-#     print "ratio_h: "+ str(ratio_h)
-#     print "transform_x: "+ str(transform_x)
-#     print "transform_y: "+ str(transform_y)
-#     print "offset_y: "+ str(offset_y)
-#     print "offset_x: "+ str(offset_x)
+    if config.debug_mode:
+        print "Screen resolution debug:"
+        print str(img_w) + " x " + str(img_h)
+        print "ratio_h: " + str(ratio_h)
+        print "transform_x: " + str(transform_x)
+        print "transform_y: " + str(transform_y)
+        print "offset_y: " + str(offset_y)
+        print "offset_x: " + str(offset_x)
 
 
 def show_image(image_path):
