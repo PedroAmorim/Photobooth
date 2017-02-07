@@ -21,10 +21,10 @@ import cups
 ####################
 # Variables Config #
 ####################
-led_pin = 27  # LED
-btn_pin = 17  # pin for the start button
-shutdown_btn_pin = 18  # pin for the shutdown button
-print_btn_pin = 12  # pin for the print button
+led_pin = config.led_pin
+btn_pin = config.btn_pin
+shutdown_btn_pin = config.shutdown_btn_pin
+print_btn_pin = config.print_btn_pin
 
 total_pics = 4  # number of pics to be taken
 capture_delay = 1  # delay between pics
