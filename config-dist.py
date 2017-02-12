@@ -3,6 +3,8 @@ led_pin = 27  # LED
 btn_pin = 17  # pin for the start button
 shutdown_btn_pin = 18  # pin for the shutdown button
 print_btn_pin = 12  # pin for the print button
+print_led_pin = 13  # pin for the print LED
+
 # Config settings to change behavior of photo booth
 # width of the display monitor
 monitor_w = 800

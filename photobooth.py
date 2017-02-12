@@ -25,6 +25,7 @@ led_pin = config.led_pin
 btn_pin = config.btn_pin
 shutdown_btn_pin = config.shutdown_btn_pin
 print_btn_pin = config.print_btn_pin
+print_led_pin = config.print_led_pin
 
 total_pics = 4  # number of pics to be taken
 capture_delay = 1  # delay between pics
@@ -85,8 +86,10 @@ GPIO.setup(led_pin, GPIO.OUT)  # LED
 GPIO.setup(btn_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(shutdown_btn_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(print_btn_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(print_led_pin, GPIO.OUT)  # LED
 # for some reason the pin turns on at the beginning of the program. Why?
 GPIO.output(led_pin, False)
+GPIO.output(print_led_pin, False)
 
 # initialize pygame
 pygame.init()
@@ -137,8 +140,10 @@ def clear_pics(channel):
     print "Deleted previous pics"
     for x in range(0, 3):  # blink light
         GPIO.output(led_pin, True)
+        GPIO.output(print_led_pin, True)
         sleep(0.25)
         GPIO.output(led_pin, False)
+        GPIO.output(print_led_pin, False)
         sleep(0.25)
 
 
@@ -245,6 +250,7 @@ def start_photobooth():
 
     print "Get Ready"
     GPIO.output(led_pin, False)
+    GPIO.output(print_led_pin, False)
     show_image(real_path + "/instructions.png")
     sleep(prep_delay)
 
@@ -403,6 +409,14 @@ def photobooth_image(now):
 
 
 def print_image(channel):
+    # LED blinking
+    GPIO.output(print_led_pin, False)
+    sleep(0.25)
+    GPIO.output(print_led_pin, True)
+    sleep(0.25)
+    GPIO.output(print_led_pin, False)
+    sleep(0.25)
+
     # Connect to cups and select printer 0
     conn = cups.Connection()
     printers = conn.getPrinters()
@@ -412,8 +426,12 @@ def print_image(channel):
     files = filter(os.path.isfile, glob.glob(config.file_path + "/photobooth/*"))
     files.sort(key=lambda x: os.path.getmtime(x), reverse=True)
 
-    # Lunch printing
+    # Launch printing
     conn.printFile(printer_name, files[0], "PhotoBooth", {})
+    print "Launch printing request on " + printer_name + " : " + files[0]
+
+    # Turn LED on
+    GPIO.output(print_led_pin, True)
 
 ##################
 #  Main Program  #
@@ -435,8 +453,10 @@ if config.enable_print_btn:
 print "Photo booth app running..."
 for x in range(0, 5):  # blink light to show the app is running
     GPIO.output(led_pin, True)
+    GPIO.output(print_led_pin, True)
     sleep(0.25)
     GPIO.output(led_pin, False)
+    GPIO.output(print_led_pin, False)
     sleep(0.25)
 
 show_image(real_path + "/intro.png")
@@ -444,6 +464,7 @@ show_image(real_path + "/intro.png")
 while True:
     # turn on the light showing users they can push the button
     GPIO.output(led_pin, True)
+    GPIO.output(print_led_pin, True)
     # press escape to exit pygame. Then press ctrl-c to exit python.
     input(pygame.event.get())
     GPIO.wait_for_edge(btn_pin, GPIO.FALLING)
