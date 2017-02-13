@@ -14,7 +14,7 @@ import atexit
 import sys
 import socket
 import pygame
-from pygame.locals import QUIT, KEYDOWN, K_ESCAPE
+from pygame.locals import QUIT, KEYDOWN, K_ESCAPE, K_SPACE, K_p
 import config  # this is the config python file config.py
 import cups
 
@@ -357,7 +357,7 @@ def start_photobooth():
     GPIO.output(led_pin, True)  # turn on the LED
 
 
-def shutdown(channel):
+def shutdown():
     """
     @brief      Shutdown the RaspberryPi
                 config sudoers to be available to execute shutdown whitout password
@@ -397,7 +397,7 @@ def photobooth_image(now):
     pygame.image.save(bgimage, config.file_path + "/photobooth/" + now + ".jpg")
 
 
-def print_image(channel):
+def print_image():
     # LED blinking
     GPIO.output(print_led_pin, False)
     sleep(0.25)
@@ -465,3 +465,9 @@ while run:
         if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
             run = False
             sys.exit()
+        # Start photobooth
+        elif event.type == KEYDOWN and event.key == K_SPACE:
+            start_photobooth()
+        # Print last image
+        elif event.type == KEYDOWN and event.key == K_p:
+            print_image()
