@@ -105,16 +105,14 @@ if not config.debug_mode:
 #############
 
 
+@atexit.register
 def cleanup():
     """
     @brief      clean up running programs as needed when main program exits
     """
-    print('Ended abruptly')
+    print('Ended abruptly!')
     pygame.quit()
     GPIO.cleanup()
-
-
-atexit.register(cleanup)
 
 
 def input(events):
@@ -241,9 +239,6 @@ def start_photobooth():
     @brief      Define the photo taking function for when the big button is pressed
     """
 
-    # press escape to exit pygame. Then press ctrl-c to exit python.
-    input(pygame.event.get())
-
     #
     #  Begin Step 1
     #
@@ -327,9 +322,6 @@ def start_photobooth():
     #  Begin Step 3
     #
 
-    # press escape to exit pygame. Then press ctrl-c to exit python.
-    input(pygame.event.get())
-
     print "Creating an animated gif"
 
     show_image(real_path + "/processing.png")
@@ -348,9 +340,6 @@ def start_photobooth():
     #
     #  Begin Step 4
     #
-
-    # press escape to exit pygame. Then press ctrl-c to exit python.
-    input(pygame.event.get())
 
     try:
         display_pics(now)
@@ -450,6 +439,9 @@ if config.enable_shutdown_btn:
 if config.enable_print_btn:
     GPIO.add_event_detect(print_btn_pin, GPIO.FALLING, callback=print_image, bouncetime=1000)
 
+# Setup button start_photobooth
+GPIO.add_event_detect(btn_pin, GPIO.FALLING, callback=start_photobooth, bouncetime=1000)
+
 print "Photo booth app running..."
 for x in range(0, 5):  # blink light to show the app is running
     GPIO.output(led_pin, True)
@@ -460,13 +452,16 @@ for x in range(0, 5):  # blink light to show the app is running
     sleep(0.25)
 
 show_image(real_path + "/intro.png")
+# turn on the light showing users they can push the button
+GPIO.output(led_pin, True)
+GPIO.output(print_led_pin, True)
 
-while True:
-    # turn on the light showing users they can push the button
-    GPIO.output(led_pin, True)
-    GPIO.output(print_led_pin, True)
+run = True
+while run:
+    time.sleep(1)  # debounce
     # press escape to exit pygame. Then press ctrl-c to exit python.
-    input(pygame.event.get())
-    GPIO.wait_for_edge(btn_pin, GPIO.FALLING)
-    time.sleep(config.debounce)  # debounce
-    start_photobooth()
+    for event in pygame.event.get():
+        # pygame.QUIT is sent when the user clicks the window's "X" button
+        if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
+            run = False
+            sys.exit()
