@@ -1,7 +1,8 @@
 #!/usr/bin/env python
-# created by chris@drumminhands.com
-# see instructions at
-# http://www.drumminhands.com/2014/06/15/raspberry-pi-photo-booth/
+# -*-coding:utf-8 -*
+#
+# Initial project created by chris@drumminhands.com
+# Current fork made by Pedro Amorim (contact@pamorim.fr) and Vitor Amorim
 
 import os
 import glob
@@ -12,7 +13,6 @@ import RPi.GPIO as GPIO
 import picamera  # http://picamera.readthedocs.org/en/release-1.4/install2.html
 import atexit
 import sys
-import socket
 import pygame
 from pygame.locals import QUIT, KEYDOWN, K_ESCAPE, K_SPACE, K_p
 import config  # this is the config python file config.py
@@ -31,7 +31,10 @@ total_pics = 4  # number of pics to be taken
 capture_delay = 1  # delay between pics
 prep_delay = 3  # number of seconds at step 1 as users prep to have photo taken
 gif_delay = 100  # How much time between frames in the animated gif
-restart_delay = 5  # how long to display finished message before beginning a new session
+restart_delay = 3  # how long to display finished message before beginning a new session
+# how much to wait in-between showing pics on-screen after taking
+replay_delay = 1
+replay_cycles = 2  # how many times to show each photo on-screen after taking
 
 # full frame of v1 camera is 2592x1944. Wide screen max is 2592,1555
 # if you run into resource issues, try smaller, like 1920x1152.
@@ -48,21 +51,8 @@ else:
     preview_w = config.monitor_h / (4 / 3)
     preview_h = config.monitor_h
 
-#########################
-# Variables that Change #
-#########################
-# Do not change these variables, as the code will change it anyway
-transform_x = config.monitor_w  # how wide to scale the jpg when replaying
-transfrom_y = config.monitor_h  # how high to scale the jpg when replaying
-offset_x = 0  # how far off to left corner to display photos
-offset_y = 0  # how far off to left corner to display photos
-# how much to wait in-between showing pics on-screen after taking
-replay_delay = 1
-replay_cycles = 2  # how many times to show each photo on-screen after taking
-print_counter = 0
-
 #######################
-# Photobooth image #
+# Photobooth image    #
 #######################
 # Image ratio 4/3
 image_h = 525
@@ -72,6 +62,16 @@ margin = 50
 # Output image ration 3/2
 output_h = 1200
 output_w = 1800
+
+#########################
+# Variables that Change #
+#########################
+# Do not change these variables, as the code will change it anyway
+transform_x = config.monitor_w  # how wide to scale the jpg when replaying
+transfrom_y = config.monitor_h  # how high to scale the jpg when replaying
+offset_x = 0  # how far off to left corner to display photos
+offset_y = 0  # how far off to left corner to display photos
+print_counter = 0
 
 if not config.camera_landscape:
     tmp = image_h
@@ -240,7 +240,7 @@ def display_pics(jpg_group):
     for i in range(0, replay_cycles):  # show pics a few times
         for i in range(1, total_pics + 1):  # show each pic
             show_image(config.file_path + jpg_group + "-0" + str(i) + ".jpg")
-            time.sleep(replay_delay)  # pause
+            sleep(replay_delay)  # pause
 
 
 def start_photobooth():
@@ -286,7 +286,7 @@ def start_photobooth():
             for i in range(1, total_pics + 1):
                 camera.hflip = True  # preview a mirror image
                 camera.start_preview(resolution=(preview_w, preview_h))
-                time.sleep(2)  # warm up camera
+                sleep(2)  # warm up camera
                 GPIO.output(led_pin, True)  # turn on the LED
                 filename = config.file_path + now + '-0' + str(i) + '.jpg'
                 camera.stop_preview()
@@ -296,7 +296,7 @@ def start_photobooth():
                 print(filename)
                 GPIO.output(led_pin, False)  # turn off the LED
                 show_image(real_path + "/pose" + str(i) + ".png")
-                time.sleep(capture_delay)  # pause in-between shots
+                sleep(capture_delay)  # pause in-between shots
                 clear_screen()
                 if i == total_pics + 1:
                     break
@@ -306,13 +306,13 @@ def start_photobooth():
         print("low resolution")
         # start preview at low res but the right ratio
         camera.start_preview(resolution=(preview_w, preview_h))
-        time.sleep(2)  # warm up camera
+        sleep(2)  # warm up camera
 
         try:  # take the photos
             for i, filename in enumerate(camera.capture_continuous(config.file_path + now + '-' + '{counter:02d}.jpg')):
                 GPIO.output(led_pin, True)  # turn on the LED
                 print(filename)
-                time.sleep(capture_delay)  # pause in-between shots
+                sleep(capture_delay)  # pause in-between shots
                 GPIO.output(led_pin, False)  # turn off the LED
                 if i == total_pics - 1:
                     break
@@ -335,9 +335,8 @@ def start_photobooth():
             "*.jpg " + config.file_path + now + ".gif"
         os.system(graphicsmagick)  # make the .gif
 
-    if config.make_photobooth_image:
-        print("Creating a photo booth picture")
-        photobooth_image(now)
+    print("Creating a photo booth picture")
+    photobooth_image(now)
 
     # reset print counter
     print_counter = 0
@@ -357,7 +356,7 @@ def start_photobooth():
 
     show_image(real_path + "/finished.png")
 
-    time.sleep(restart_delay)
+    sleep(restart_delay)
     show_image(real_path + "/intro.png")
     GPIO.output(led_pin, True)  # turn on the LED
 
@@ -411,12 +410,11 @@ def print_image():
         print_counter += 1
 
         # LED blinking
-        GPIO.output(print_led_pin, False)
-        sleep(0.25)
-        GPIO.output(print_led_pin, True)
-        sleep(0.25)
-        GPIO.output(print_led_pin, False)
-        sleep(0.25)
+        for x in range(0, 4):
+            GPIO.output(print_led_pin, True)
+            sleep(0.25)
+            GPIO.output(print_led_pin, False)
+            sleep(0.25)
 
         # Connect to cups and select printer 0
         conn = cups.Connection()
@@ -472,16 +470,16 @@ GPIO.output(print_led_pin, True)
 
 run = True
 while run:
-    time.sleep(1)  # debounce
-    # press escape to exit pygame. Then press ctrl-c to exit python.
+    sleep(1)
+    # press escape to exit pygame.
     for event in pygame.event.get():
         # pygame.QUIT is sent when the user clicks the window's "X" button
         if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
             run = False
             sys.exit()
-        # Start photobooth
+        # Start photobooth with key "space"
         elif event.type == KEYDOWN and event.key == K_SPACE:
             start_photobooth()
-        # Print last image
+        # Print last image with key "P"
         elif event.type == KEYDOWN and event.key == K_p:
             print_image()

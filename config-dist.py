@@ -23,8 +23,6 @@ debounce = 0.3
 capture_count_pics = True
 # True to make an animated gif. False to post 4 jpgs into one post.
 make_gifs = True
-# True to make an photomaton image. False do nothing.
-make_photobooth_image = True
 
 # adjust for lighting issues. Normal is 100 or 200. Sort of dark is 400.
 # Dark is 800 max.
@@ -39,10 +37,10 @@ camera_high_res_w = 1296  # width (max 2592)
 camera_high_res_h = 972  # height (max 1944)
 
 # enable color on camera preview
-camera_color_preview = False
+camera_color_preview = True
 
 # camera orientation
-camera_landscape = True
+camera_landscape = False
 
 # Configure sudoers on your system, to can execute shutdown whitout password
 # Add this line in file /etc/sudoers
