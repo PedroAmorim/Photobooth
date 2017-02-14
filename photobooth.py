@@ -40,6 +40,14 @@ restart_delay = 5  # how long to display finished message before beginning a new
 high_res_w = config.camera_high_res_w  # width of high res image, if taken
 high_res_h = config.camera_high_res_h  # height of high res image, if taken
 
+# Preview
+if config.camera_landscape:
+    preview_w = config.monitor_w
+    preview_h = config.monitor_h
+else:
+    preview_w = config.monitor_h / (4 / 3)
+    preview_h = config.monitor_h
+
 #########################
 # Variables that Change #
 #########################
@@ -276,20 +284,13 @@ def start_photobooth():
     if config.capture_count_pics:
         try:  # take the photos
             for i in range(1, total_pics + 1):
-                if config.camera_landscape:
-                    camera.hflip = True  # preview a mirror image
-                    camera.start_preview(resolution=(config.monitor_w, config.monitor_h))
-                else:
-                    camera.vflip = True
-                    camera.start_preview(rotation=270,resolution=(config.monitor_w, config.monitor_h))
+                camera.hflip = True  # preview a mirror image
+                camera.start_preview(resolution=(preview_w, preview_h))
                 time.sleep(2)  # warm up camera
                 GPIO.output(led_pin, True)  # turn on the LED
                 filename = config.file_path + now + '-0' + str(i) + '.jpg'
                 camera.stop_preview()
-                if config.camera_landscape:
-                    camera.hflip = False  # flip back when taking photo
-                else:
-                    camera.vflip = False
+                camera.hflip = False  # flip back when taking photo
                 os.system("aplay camera-shutter-sound.wav")  # Play sound
                 camera.capture(filename)
                 print(filename)
@@ -304,10 +305,7 @@ def start_photobooth():
     else:
         print("low resolution")
         # start preview at low res but the right ratio
-        if config.camera_landscape:
-            camera.start_preview(resolution=(config.monitor_w, config.monitor_h))
-        else:
-            camera.start_preview(rotation=270,resolution=(config.monitor_w, config.monitor_h))
+        camera.start_preview(resolution=(preview_w, preview_h))
         time.sleep(2)  # warm up camera
 
         try:  # take the photos
