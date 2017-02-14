@@ -51,6 +51,7 @@ offset_y = 0  # how far off to left corner to display photos
 # how much to wait in-between showing pics on-screen after taking
 replay_delay = 1
 replay_cycles = 2  # how many times to show each photo on-screen after taking
+print_counter = 0
 
 #######################
 # Photobooth image #
@@ -239,6 +240,9 @@ def start_photobooth():
     @brief      Define the photo taking function for when the big button is pressed
     """
 
+    # connect to global vars
+    global print_counter
+
     #
     #  Begin Step 1
     #
@@ -337,6 +341,9 @@ def start_photobooth():
         print("Creating a photo booth picture")
         photobooth_image(now)
 
+    # reset print counter
+    print_counter = 0
+
     #
     #  Begin Step 4
     #
@@ -398,29 +405,38 @@ def photobooth_image(now):
 
 
 def print_image():
-    # LED blinking
-    GPIO.output(print_led_pin, False)
-    sleep(0.25)
-    GPIO.output(print_led_pin, True)
-    sleep(0.25)
-    GPIO.output(print_led_pin, False)
-    sleep(0.25)
+    # connect to global vars
+    global print_counter
 
-    # Connect to cups and select printer 0
-    conn = cups.Connection()
-    printers = conn.getPrinters()
-    printer_name = printers.keys()[0]
+    if print_counter < config.max_print:
+        # increase counter
+        print_counter += 1
 
-    # get last image
-    files = filter(os.path.isfile, glob.glob(config.file_path + "/photobooth/*"))
-    files.sort(key=lambda x: os.path.getmtime(x), reverse=True)
+        # LED blinking
+        GPIO.output(print_led_pin, False)
+        sleep(0.25)
+        GPIO.output(print_led_pin, True)
+        sleep(0.25)
+        GPIO.output(print_led_pin, False)
+        sleep(0.25)
 
-    # Launch printing
-    conn.printFile(printer_name, files[0], "PhotoBooth", {})
-    print "Launch printing request on " + printer_name + " : " + files[0]
+        # Connect to cups and select printer 0
+        conn = cups.Connection()
+        printers = conn.getPrinters()
+        printer_name = printers.keys()[0]
 
-    # Turn LED on
-    GPIO.output(print_led_pin, True)
+        # get last image
+        files = filter(os.path.isfile, glob.glob(config.file_path + "/photobooth/*"))
+        files.sort(key=lambda x: os.path.getmtime(x), reverse=True)
+
+        # Launch printing
+        conn.printFile(printer_name, files[0], "PhotoBooth", {})
+        print "Launch printing request on " + printer_name + " : " + files[0]
+
+        # Turn LED on
+        GPIO.output(print_led_pin, True)
+    else:
+        print "You have reach print quota for this image."
 
 ##################
 #  Main Program  #
