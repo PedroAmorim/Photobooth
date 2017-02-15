@@ -7,6 +7,7 @@
 import os
 import glob
 import time
+from datetime import datetime
 import traceback
 from time import sleep
 import RPi.GPIO as GPIO
@@ -144,7 +145,7 @@ def clear_pics(channel):
     for f in files:
         os.remove(f)
     # light the lights in series to show completed
-    print "Deleted previous pics"
+    log("Deleted previous pics")
     for x in range(0, 3):  # blink light
         GPIO.output(led_pin, True)
         GPIO.output(print_led_pin, True)
@@ -173,27 +174,24 @@ def set_demensions(img_w, img_h):
 
     if (ratio_h < config.monitor_h):
         # Use horizontal black bars
-        # print "horizontal black bars"
         transform_y = ratio_h
         transform_x = config.monitor_w
         offset_y = (config.monitor_h - ratio_h) / 2
         offset_x = 0
     elif (ratio_h > config.monitor_h):
         # Use vertical black bars
-        # print "vertical black bars"
         transform_x = (config.monitor_h * img_w) / img_h
         transform_y = config.monitor_h
         offset_x = (config.monitor_w - transform_x) / 2
         offset_y = 0
     else:
         # No need for black bars as photo ratio equals screen ratio
-        # print "no black bars"
         transform_x = config.monitor_w
         transform_y = config.monitor_h
         offset_y = offset_x = 0
 
     if config.debug_mode:
-        print "Screen resolution debug:"
+        log("Screen resolution debug:")
         print str(img_w) + " x " + str(img_h)
         print "ratio_h: " + str(ratio_h)
         print "transform_x: " + str(transform_x)
@@ -255,7 +253,7 @@ def start_photobooth():
     #  Begin Step 1
     #
 
-    print "Get Ready"
+    log("Get Ready")
     GPIO.output(led_pin, False)
     GPIO.output(print_led_pin, False)
     show_image(real_path + "/instructions.png")
@@ -276,7 +274,7 @@ def start_photobooth():
     #  Begin Step 2
     #
 
-    print "Taking pics"
+    log("Taking pics")
 
     # get the current date and time for the start of the filename
     now = time.strftime("%Y-%m-%d-%H-%M-%S")
@@ -324,7 +322,7 @@ def start_photobooth():
     #  Begin Step 3
     #
 
-    print "Creating an animated gif"
+    log("Creating an animated gif")
 
     show_image(real_path + "/processing.png")
 
@@ -335,7 +333,7 @@ def start_photobooth():
             "*.jpg " + config.file_path + now + ".gif"
         os.system(graphicsmagick)  # make the .gif
 
-    print("Creating a photo booth picture")
+    log("Creating a photo booth picture")
     photobooth_image(now)
 
     # reset print counter
@@ -352,7 +350,7 @@ def start_photobooth():
         traceback.print_exception(e.__class__, e, tb)
         pygame.quit()
 
-    print "Done"
+    log("Done")
 
     show_image(real_path + "/finished.png")
 
@@ -427,12 +425,16 @@ def print_image():
 
         # Launch printing
         conn.printFile(printer_name, files[0], "PhotoBooth", {})
-        print "Launch printing request on " + printer_name + " : " + files[0]
+        log("Launch printing request on " + printer_name + " : " + files[0])
 
         # Turn LED on
         GPIO.output(print_led_pin, True)
     else:
-        print "You have reach print quota for this image."
+        log("You have reach print quota for image " + " : " + files[0])
+
+
+def log(text):
+    print datetime.now().strftime('%Y/%m/%d %H:%M:%S') + " | " + text
 
 ##################
 #  Main Program  #
@@ -454,7 +456,7 @@ if config.enable_print_btn:
 # Setup button start_photobooth
 GPIO.add_event_detect(btn_pin, GPIO.FALLING, callback=start_photobooth, bouncetime=1000)
 
-print "Photo booth app running..."
+log("Photo booth app running...")
 for x in range(0, 5):  # blink light to show the app is running
     GPIO.output(led_pin, True)
     GPIO.output(print_led_pin, True)
