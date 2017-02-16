@@ -7,9 +7,8 @@
 import os
 import glob
 import time
-from datetime import datetime
-import traceback
 from time import sleep
+import traceback
 import RPi.GPIO as GPIO
 import picamera  # http://picamera.readthedocs.org/en/release-1.4/install2.html
 import atexit
@@ -120,7 +119,7 @@ def cleanup():
     """
     @brief      clean up running programs as needed when main program exits
     """
-    print('Ended abruptly!')
+    log('Ended abruptly!')
     pygame.quit()
     GPIO.cleanup()
 
@@ -434,7 +433,7 @@ def print_image():
 
 
 def log(text):
-    print datetime.now().strftime('%Y/%m/%d %H:%M:%S') + " | " + text
+    print time.strftime('%Y/%m/%d %H:%M:%S') + " | " + text
 
 ##################
 #  Main Program  #
