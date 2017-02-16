@@ -278,44 +278,31 @@ def start_photobooth():
     # get the current date and time for the start of the filename
     now = time.strftime("%Y-%m-%d-%H-%M-%S")
 
-    if config.capture_count_pics:
-        try:  # take the photos
-            for i in range(1, total_pics + 1):
-                camera.hflip = True  # preview a mirror image
-                camera.start_preview(resolution=(preview_w, preview_h))
-                sleep(2)  # warm up camera
-                GPIO.output(led_pin, True)  # turn on the LED
-                filename = config.file_path + now + '-0' + str(i) + '.jpg'
-                camera.stop_preview()
-                camera.hflip = False  # flip back when taking photo
-                os.system("aplay camera-shutter-sound.wav")  # Play sound
-                camera.capture(filename)
-                print(filename)
-                GPIO.output(led_pin, False)  # turn off the LED
-                show_image(real_path + "/pose" + str(i) + ".png")
-                sleep(capture_delay)  # pause in-between shots
-                clear_screen()
-                if i == total_pics + 1:
-                    break
-        finally:
-            camera.close()
-    else:
-        print("low resolution")
-        # start preview at low res but the right ratio
-        camera.start_preview(resolution=(preview_w, preview_h))
-        sleep(2)  # warm up camera
+    try:  # take the photos
+        for i in range(1, total_pics + 1):
+            filename = config.file_path + now + '-0' + str(i) + '.jpg'
 
-        try:  # take the photos
-            for i, filename in enumerate(camera.capture_continuous(config.file_path + now + '-' + '{counter:02d}.jpg')):
-                GPIO.output(led_pin, True)  # turn on the LED
-                print(filename)
-                sleep(capture_delay)  # pause in-between shots
-                GPIO.output(led_pin, False)  # turn off the LED
-                if i == total_pics - 1:
-                    break
-        finally:
+            camera.hflip = True  # preview a mirror image
+            camera.start_preview(resolution=(preview_w, preview_h))
+            sleep(2)  # warm up camera
+
+            GPIO.output(led_pin, True)  # turn on the LED
             camera.stop_preview()
-            camera.close()
+            camera.hflip = False  # flip back when taking photo
+
+            os.system("aplay camera-shutter-sound.wav")  # Play sound
+
+            camera.capture(filename)
+            log("Capture : " + filename)
+            GPIO.output(led_pin, False)  # turn off the LED
+
+            show_image(real_path + "/pose" + str(i) + ".png")
+            sleep(capture_delay)  # pause in-between shots
+            clear_screen()
+            # if i == total_pics + 1:
+            #     break
+    finally:
+        camera.close()
 
     #
     #  Begin Step 3

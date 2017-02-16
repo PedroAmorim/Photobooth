@@ -18,9 +18,6 @@ clear_on_startup = False
 # how long to debounce the button. Add more time if the button triggers
 # too many times.
 debounce = 0.3
-# if true, show a photo count between taking photos. If false, do not.
-# False is faster.
-capture_count_pics = True
 # True to make an animated gif. False to post 4 jpgs into one post.
 make_gifs = True
 
