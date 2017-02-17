@@ -72,6 +72,7 @@ transfrom_y = config.monitor_h  # how high to scale the jpg when replaying
 offset_x = 0  # how far off to left corner to display photos
 offset_y = 0  # how far off to left corner to display photos
 print_counter = 0
+print_error = False
 
 if not config.camera_landscape:
     tmp = image_h
@@ -240,6 +241,20 @@ def display_pics(jpg_group):
             sleep(replay_delay)  # pause
 
 
+def make_led_blinking(pin, counter=5, duration=0.25):
+    """
+    @brief      Make blinking a led with oneline code
+    @param      pin         Led pin
+    @param      counter     Number of time the led blink
+    @param      pin         Duration between blink
+    """
+    for x in range(0, counter):
+        GPIO.output(pin, True)
+        sleep(duration)
+        GPIO.output(pin, False)
+        sleep(duration)
+
+
 def start_photobooth():
     """
     @brief      Define the photo taking function for when the big button is pressed
@@ -342,7 +357,9 @@ def start_photobooth():
 
     sleep(restart_delay)
     show_image(real_path + "/intro.png")
-    GPIO.output(led_pin, True)  # turn on the LED
+    # turn on the LED
+    GPIO.output(led_pin, True)
+    GPIO.output(print_led_pin, True)
 
 
 def shutdown():
@@ -387,23 +404,27 @@ def photobooth_image(now):
 
 def print_image():
     # connect to global vars
-    global print_counter
+    global print_counter, print_error
+
+    # Connect to cups and select printer 0
+    conn = cups.Connection()
+    printers = conn.getPrinters()
+    printer_name = printers.keys()[0]
+
+    if print_error:
+        # restart printer
+        conn.disablePrinter(printer_name)
+        sleep(2)
+        conn.enablePrinter(printer_name)
+        print_error = False
+        make_led_blinking(print_led_pin, 6, 0.15)  # LED blinking
+        GPIO.output(print_led_pin, True)  # Turn LED on
+        return  # End here, printer should restart jobs pendings on the queue
 
     if print_counter < config.max_print:
-        # increase counter
-        print_counter += 1
+        print_counter += 1  # increase counter
 
-        # LED blinking
-        for x in range(0, 4):
-            GPIO.output(print_led_pin, True)
-            sleep(0.25)
-            GPIO.output(print_led_pin, False)
-            sleep(0.25)
-
-        # Connect to cups and select printer 0
-        conn = cups.Connection()
-        printers = conn.getPrinters()
-        printer_name = printers.keys()[0]
+        make_led_blinking(print_led_pin)  # LED blinking
 
         # get last image
         files = filter(os.path.isfile, glob.glob(config.file_path + "/photobooth/*"))
@@ -413,9 +434,16 @@ def print_image():
         conn.printFile(printer_name, files[0], "PhotoBooth", {})
         log("Launch printing request on " + printer_name + " : " + files[0])
 
+        # Check printer status
+        printerAtt = conn.getPrinterAttributes(printer_name)
+        if (printerAtt['printer-state'] != 3):
+            print_error = True
+
         # Turn LED on
         GPIO.output(print_led_pin, True)
     else:
+        # Turn LED off
+        GPIO.output(print_led_pin, False)
         log("You have reach print quota for image " + " : " + files[0])
 
 
@@ -443,27 +471,22 @@ if config.enable_print_btn:
 GPIO.add_event_detect(btn_pin, GPIO.FALLING, callback=start_photobooth, bouncetime=1000)
 
 log("Photo booth app running...")
-for x in range(0, 5):  # blink light to show the app is running
-    GPIO.output(led_pin, True)
-    GPIO.output(print_led_pin, True)
-    sleep(0.25)
-    GPIO.output(led_pin, False)
-    GPIO.output(print_led_pin, False)
-    sleep(0.25)
+
+# blink light to show the app is running
+make_led_blinking(led_pin)
+make_led_blinking(print_led_pin)
 
 show_image(real_path + "/intro.png")
 # turn on the light showing users they can push the button
 GPIO.output(led_pin, True)
 GPIO.output(print_led_pin, True)
 
-run = True
-while run:
+while True:
     sleep(1)
     # press escape to exit pygame.
     for event in pygame.event.get():
         # pygame.QUIT is sent when the user clicks the window's "X" button
         if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
-            run = False
             sys.exit()
         # Start photobooth with key "space"
         elif event.type == KEYDOWN and event.key == K_SPACE:
