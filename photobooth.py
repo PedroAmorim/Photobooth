@@ -125,17 +125,6 @@ def cleanup():
     GPIO.cleanup()
 
 
-def input(events):
-    """
-    @brief      A function to handle keyboard/mouse/device input events
-    @param      events  The events
-    """
-    for event in events:  # Hit the ESC key to quit the slideshow.
-        if (event.type == QUIT or
-                (event.type == KEYDOWN and event.key == K_ESCAPE)):
-            pygame.quit()
-
-
 def clear_pics(channel):
     """
     @brief      delete files in pics folder
@@ -295,7 +284,7 @@ def start_photobooth():
 
     try:  # take the photos
         for i in range(1, total_pics + 1):
-            filename = config.file_path + now + '-0' + str(i) + '.jpg'
+            filename = config.file_path + '/' + now + '-0' + str(i) + '.jpg'
 
             camera.hflip = True  # preview a mirror image
             camera.start_preview(resolution=(preview_w, preview_h))
@@ -316,6 +305,10 @@ def start_photobooth():
             clear_screen()
             # if i == total_pics + 1:
             #     break
+    except Exception, e:
+        tb = sys.exc_info()[2]
+        traceback.print_exception(e.__class__, e, tb)
+        pygame.quit()
     finally:
         camera.close()
 
@@ -362,7 +355,7 @@ def start_photobooth():
     GPIO.output(print_led_pin, True)
 
 
-def shutdown():
+def shutdown(channel):
     """
     @brief      Shutdown the RaspberryPi
                 config sudoers to be available to execute shutdown whitout password
@@ -370,6 +363,8 @@ def shutdown():
                 myUser ALL = (root) NOPASSWD: /sbin/halt
     """
     print("Your RaspberryPi will be shut down in few seconds...")
+    pygame.quit()
+    GPIO.cleanup()
     os.system("sudo halt -p")
 
 
@@ -402,7 +397,7 @@ def photobooth_image(now):
     pygame.image.save(bgimage, config.file_path + "/photobooth/" + now + ".jpg")
 
 
-def print_image():
+def print_image(channel):
     # connect to global vars
     global print_counter, print_error
 
@@ -412,19 +407,19 @@ def print_image():
     printer_name = printers.keys()[0]
 
     if print_error:
+        log("Printer restart after error")
         # restart printer
         conn.disablePrinter(printer_name)
         sleep(2)
         conn.enablePrinter(printer_name)
         print_error = False
-        make_led_blinking(print_led_pin, 6, 0.15)  # LED blinking
         GPIO.output(print_led_pin, True)  # Turn LED on
         return  # End here, printer should restart jobs pendings on the queue
 
     if print_counter < config.max_print:
         print_counter += 1  # increase counter
 
-        make_led_blinking(print_led_pin)  # LED blinking
+        GPIO.output(print_led_pin, False)
 
         # get last image
         files = filter(os.path.isfile, glob.glob(config.file_path + "/photobooth/*"))
@@ -437,12 +432,15 @@ def print_image():
         # Check printer status
         printerAtt = conn.getPrinterAttributes(printer_name)
         if (printerAtt['printer-state'] != 3):
+            log("Printer error : (" + str(printerAtt['printer-state']) + ") " + printerAtt['printer-state-message'])
+            make_led_blinking(print_led_pin, 6, 0.15)  # LED blinking
             print_error = True
-
-        # Turn LED on
-        GPIO.output(print_led_pin, True)
+        else:
+            # Turn LED on
+            GPIO.output(print_led_pin, True)
     else:
         # Turn LED off
+        make_led_blinking(print_led_pin, 2, 0.15)  # LED blinking
         GPIO.output(print_led_pin, False)
         log("You have reach print quota for image " + " : " + files[0])
 
@@ -461,20 +459,20 @@ if config.clear_on_startup:
 
 # Add event listener to catch shutdown request
 if config.enable_shutdown_btn:
-    GPIO.add_event_detect(shutdown_btn_pin, GPIO.FALLING, callback=shutdown, bouncetime=1000)
+    GPIO.add_event_detect(shutdown_btn_pin, GPIO.FALLING, callback=shutdown, bouncetime=config.debounce)
 
 # If printing enable, add event listener on print button
 if config.enable_print_btn:
-    GPIO.add_event_detect(print_btn_pin, GPIO.FALLING, callback=print_image, bouncetime=1000)
+    GPIO.add_event_detect(print_btn_pin, GPIO.FALLING, callback=print_image, bouncetime=config.debounce)
 
 # Setup button start_photobooth
-GPIO.add_event_detect(btn_pin, GPIO.FALLING, callback=start_photobooth, bouncetime=1000)
+# DON'T USE THREADED CALLBACKS
+GPIO.add_event_detect(btn_pin, GPIO.FALLING, bouncetime=config.debounce)
 
 log("Photo booth app running...")
 
 # blink light to show the app is running
-make_led_blinking(led_pin)
-make_led_blinking(print_led_pin)
+make_led_blinking((print_led_pin, led_pin))  # LED blinking
 
 show_image(real_path + "/intro.png")
 # turn on the light showing users they can push the button
@@ -483,7 +481,7 @@ GPIO.output(print_led_pin, True)
 
 while True:
     sleep(1)
-    # press escape to exit pygame.
+    # Keyboard shortcuts
     for event in pygame.event.get():
         # pygame.QUIT is sent when the user clicks the window's "X" button
         if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
@@ -494,3 +492,6 @@ while True:
         # Print last image with key "P"
         elif event.type == KEYDOWN and event.key == K_p:
             print_image()
+    # Detect event on start button
+    if GPIO.event_detected(btn_pin):
+        start_photobooth()
