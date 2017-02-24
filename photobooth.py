@@ -284,7 +284,7 @@ def start_photobooth():
 
     try:  # take the photos
         for i in range(1, total_pics + 1):
-            filename = config.file_path + '/' + now + '-0' + str(i) + '.jpg'
+            filename = config.file_path + now + '-0' + str(i) + '.jpg'
 
             camera.hflip = True  # preview a mirror image
             camera.start_preview(resolution=(preview_w, preview_h))
@@ -371,7 +371,7 @@ def shutdown(channel):
 def photobooth_image(now):
 
     # Load images
-    bgimage = pygame.image.load("bgimage.png")
+    bgimage = pygame.image.load(real_path + "/bgimage.png")
     image1 = pygame.image.load(config.file_path + now + "-01.jpg")
     image2 = pygame.image.load(config.file_path + now + "-02.jpg")
     image3 = pygame.image.load(config.file_path + now + "-03.jpg")
@@ -394,7 +394,12 @@ def photobooth_image(now):
     bgimage.blit(image3, (margin, margin * 2 + image_h))
     bgimage.blit(image4, (margin * 2 + image_w, margin * 2 + image_h))
 
-    pygame.image.save(bgimage, config.file_path + "/photobooth/" + now + ".jpg")
+    file_path_photobooth = config.file_path + "photobooth/"
+    # Check directory is writable
+    if (os.access(config.file_path_photobooth, os.W_OK)):
+        pygame.image.save(bgimage, file_path_photobooth + now + ".jpg")
+    else:
+        log("ERROR path not writeable: " + file_path_photobooth)
 
 
 def print_image(channel):
@@ -422,7 +427,7 @@ def print_image(channel):
         GPIO.output(print_led_pin, False)
 
         # get last image
-        files = filter(os.path.isfile, glob.glob(config.file_path + "/photobooth/*"))
+        files = filter(os.path.isfile, glob.glob(config.file_path + "photobooth/*"))
         files.sort(key=lambda x: os.path.getmtime(x), reverse=True)
 
         # Launch printing

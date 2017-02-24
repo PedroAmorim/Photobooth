@@ -11,15 +11,18 @@ monitor_w = 800
 # height of the display monitor
 monitor_h = 480
 # path to save images
+# Should end with a "/""
 file_path = '/home/pi/photobooth/pics/'
 # True will clear previously stored photos as the program launches. False
 # will leave all previous photos.
 clear_on_startup = False
 # how long to debounce the button. Add more time if the button triggers
 # too many times.
-debounce = 0.3
+# Time in milliseconds
+debounce = 1000
 # True to make an animated gif. False to post 4 jpgs into one post.
-make_gifs = True
+# Need GraphicsMagick -- http://www.graphicsmagick.org/
+make_gifs = False
 
 # adjust for lighting issues. Normal is 100 or 200. Sort of dark is 400.
 # Dark is 800 max.
