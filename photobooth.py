@@ -256,7 +256,7 @@ def start_photobooth():
     #  Begin Step 1
     #
 
-    log("Get Ready")
+    log("Get Ready from " + real_path)
     GPIO.output(led_pin, False)
     GPIO.output(print_led_pin, False)
     show_image(real_path + "/instructions.png")
@@ -294,7 +294,7 @@ def start_photobooth():
             camera.stop_preview()
             camera.hflip = False  # flip back when taking photo
 
-            os.system("aplay camera-shutter-sound.wav")  # Play sound
+            os.system("aplay " + real_path + "/camera-shutter-sound.wav")  # Play sound
 
             camera.capture(filename)
             log("Capture : " + filename)
@@ -316,11 +316,10 @@ def start_photobooth():
     #  Begin Step 3
     #
 
-    log("Creating an animated gif")
-
     show_image(real_path + "/processing.png")
 
     if config.make_gifs:  # make the gifs
+        log("Creating an animated gif")
         # make an animated gif
         graphicsmagick = "gm convert -delay " + \
             str(gif_delay) + " " + config.file_path + now + \
@@ -396,7 +395,7 @@ def photobooth_image(now):
 
     file_path_photobooth = config.file_path + "photobooth/"
     # Check directory is writable
-    if (os.access(config.file_path_photobooth, os.W_OK)):
+    if (os.access(file_path_photobooth, os.W_OK)):
         pygame.image.save(bgimage, file_path_photobooth + now + ".jpg")
     else:
         log("ERROR path not writeable: " + file_path_photobooth)
