@@ -250,7 +250,7 @@ def start_photobooth():
     """
 
     # connect to global vars
-    global print_counter
+    global print_counter, print_error
 
     #
     #  Begin Step 1
@@ -351,7 +351,8 @@ def start_photobooth():
     show_image(real_path + "/intro.png")
     # turn on the LED
     GPIO.output(led_pin, True)
-    GPIO.output(print_led_pin, True)
+    if not print_error:
+        GPIO.output(print_led_pin, True)
 
 
 def shutdown(channel):
@@ -401,7 +402,7 @@ def photobooth_image(now):
         log("ERROR path not writeable: " + file_path_photobooth)
 
 
-def print_image(channel):
+def print_image():
     # connect to global vars
     global print_counter, print_error
 
@@ -467,7 +468,7 @@ if config.enable_shutdown_btn:
 
 # If printing enable, add event listener on print button
 if config.enable_print_btn:
-    GPIO.add_event_detect(print_btn_pin, GPIO.FALLING, callback=print_image, bouncetime=config.debounce)
+    GPIO.add_event_detect(print_btn_pin, GPIO.FALLING, bouncetime=config.debounce)
 
 # Setup button start_photobooth
 # DON'T USE THREADED CALLBACKS
@@ -499,3 +500,5 @@ while True:
     # Detect event on start button
     if GPIO.event_detected(btn_pin):
         start_photobooth()
+    if config.enable_print_btn and GPIO.event_detected(print_btn_pin):
+        print_image()
