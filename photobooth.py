@@ -48,7 +48,7 @@ if config.camera_landscape:
     preview_w = config.monitor_w
     preview_h = config.monitor_h
 else:
-    preview_w = config.monitor_h / (4 / 3)
+    preview_w = (config.monitor_h * config.monitor_h) / config.monitor_w
     preview_h = config.monitor_h
 
 #######################
