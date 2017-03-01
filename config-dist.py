@@ -11,7 +11,7 @@ monitor_w = 800
 # height of the display monitor
 monitor_h = 480
 # path to save images
-# Should end with a "/""
+# Should end with a "/"
 file_path = '/home/pi/photobooth/pics/'
 # True will clear previously stored photos as the program launches. False
 # will leave all previous photos.
@@ -32,6 +32,7 @@ camera_iso = 800
 # full frame of v1 camera is 2592x1944. Wide screen max is 2592,1555
 # if you run into resource issues, try smaller, like 1920x1152.
 # or increase memory
+# Should preserve the aspect ratio 4/3
 # http://picamera.readthedocs.io/en/release-1.12/fov.html#hardware-limits
 camera_high_res_w = 1296  # width (max 2592)
 camera_high_res_h = 972  # height (max 1944)

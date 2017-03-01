@@ -286,25 +286,23 @@ def start_photobooth():
         for i in range(1, total_pics + 1):
             filename = config.file_path + now + '-0' + str(i) + '.jpg'
 
+            show_image(real_path + "/pose" + str(i) + ".png")
+            sleep(capture_delay)  # pause in-between shots
+            clear_screen()
+
             camera.hflip = True  # preview a mirror image
             camera.start_preview(resolution=(preview_w, preview_h))
             sleep(2)  # warm up camera
 
             GPIO.output(led_pin, True)  # turn on the LED
-            camera.stop_preview()
             camera.hflip = False  # flip back when taking photo
 
             os.system("aplay " + real_path + "/camera-shutter-sound.wav")  # Play sound
 
             camera.capture(filename)
             log("Capture : " + filename)
+            camera.stop_preview()
             GPIO.output(led_pin, False)  # turn off the LED
-
-            show_image(real_path + "/pose" + str(i) + ".png")
-            sleep(capture_delay)  # pause in-between shots
-            clear_screen()
-            # if i == total_pics + 1:
-            #     break
     except Exception, e:
         tb = sys.exc_info()[2]
         traceback.print_exception(e.__class__, e, tb)
