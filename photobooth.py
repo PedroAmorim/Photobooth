@@ -110,6 +110,8 @@ if not config.debug_mode:
     pygame.mouse.set_visible(False)  # hide the mouse cursor
     pygame.display.toggle_fullscreen()
 
+capture = pygame.mixer.Sound(real_path + "/camera-shutter-sound.wav")
+
 #############
 # Functions #
 #############
@@ -289,16 +291,16 @@ def start_photobooth():
             show_image(real_path + "/pose" + str(i) + ".png")
             sleep(capture_delay)  # pause in-between shots
             clear_screen()
-
-            camera.hflip = True  # preview a mirror image
+            # preview a mirror image
+            camera.hflip = True
             camera.start_preview(resolution=(preview_w, preview_h))
             sleep(2)  # warm up camera
-
             GPIO.output(led_pin, True)  # turn on the LED
             camera.hflip = False  # flip back when taking photo
-
-            os.system("aplay " + real_path + "/camera-shutter-sound.wav")  # Play sound
-
+            # Play sound
+            capture.play()
+            sleep(0.5)  # Wait 500 ms for the sound to coincide with the capture of the picture.
+            # Capture!
             camera.capture(filename)
             log("Capture : " + filename)
             camera.stop_preview()
