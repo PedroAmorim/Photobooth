@@ -421,32 +421,28 @@ def print_image():
         GPIO.output(print_led_pin, True)  # Turn LED on
         return  # End here, printer should restart jobs pendings on the queue
 
+    # Check if printer status is available
+    printerAtt = conn.getPrinterAttributes(printer_name)
+    if (printerAtt['printer-state'] != 3):
+        log("Printer error : (" + str(printerAtt['printer-state']) + ") " + printerAtt['printer-state-message'])
+        make_led_blinking(print_led_pin, 6, 0.15)  # LED blinking
+        print_error = True
+        return  # End here, led is Off, wait for human action
+
     if print_counter < config.max_print:
         print_counter += 1  # increase counter
-
         GPIO.output(print_led_pin, False)
-
         # get last image
         files = filter(os.path.isfile, glob.glob(config.file_path + "photobooth/*"))
         files.sort(key=lambda x: os.path.getmtime(x), reverse=True)
-
         # Launch printing
         conn.printFile(printer_name, files[0], "PhotoBooth", {})
         log("Launch printing request on " + printer_name + " : " + files[0])
-
-        # Check printer status
-        printerAtt = conn.getPrinterAttributes(printer_name)
-        if (printerAtt['printer-state'] != 3):
-            log("Printer error : (" + str(printerAtt['printer-state']) + ") " + printerAtt['printer-state-message'])
-            make_led_blinking(print_led_pin, 6, 0.15)  # LED blinking
-            print_error = True
-        else:
-            # Turn LED on
-            GPIO.output(print_led_pin, True)
+        sleep(1)
+        # Turn LED on
+        GPIO.output(print_led_pin, True)
     else:
-        # Turn LED off
-        make_led_blinking(print_led_pin, 2, 0.15)  # LED blinking
-        GPIO.output(print_led_pin, False)
+        make_led_blinking(print_led_pin, 3, 0.15)  # LED blinking, at the end LED is off
         log("You have reach print quota for image " + " : " + files[0])
 
 
