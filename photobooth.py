@@ -28,13 +28,13 @@ print_btn_pin = config.print_btn_pin
 print_led_pin = config.print_led_pin
 
 total_pics = 4  # number of pics to be taken
-capture_delay = 1  # delay between pics
+capture_delay = 2  # delay between pics
 prep_delay = 3  # number of seconds at step 1 as users prep to have photo taken
 gif_delay = 100  # How much time between frames in the animated gif
 restart_delay = 3  # how long to display finished message before beginning a new session
 # how much to wait in-between showing pics on-screen after taking
 replay_delay = 1
-replay_cycles = 2  # how many times to show each photo on-screen after taking
+replay_cycles = 1  # how many times to show each photo on-screen after taking
 
 # full frame of v1 camera is 2592x1944. Wide screen max is 2592,1555
 # if you run into resource issues, try smaller, like 1920x1152.
@@ -419,14 +419,28 @@ def print_image():
         conn.enablePrinter(printer_name)
         print_error = False
         GPIO.output(print_led_pin, True)  # Turn LED on
+        show_image(real_path + "/intro.png")  # Reset screen
         return  # End here, printer should restart jobs pendings on the queue
 
     # Check if printer status is available
+    # 3 => Printer is ready!
+    # 4 => is printing, but OK, push to printing queue
+    # 5 => Failure, no paper tray, no paper, ribbon depleted
     printerAtt = conn.getPrinterAttributes(printer_name)
-    if (printerAtt['printer-state'] != 3):
+    log("Printer status : (" + str(printerAtt['printer-state']) + ") " + printerAtt['printer-state-message'])
+    if (printerAtt['printer-state'] == 5):
         log("Printer error : (" + str(printerAtt['printer-state']) + ") " + printerAtt['printer-state-message'])
         make_led_blinking(print_led_pin, 6, 0.15)  # LED blinking
         print_error = True
+        if (printerAtt['printer-state-message'] == 'Ribbon depleted!'):
+            show_image(real_path + "/error_ink.png")
+        elif (printerAtt['printer-state-message'] == 'Paper feed problem!' or printerAtt['printer-state-message'] == 'No paper tray loaded, aborting!'):
+            show_image(real_path + "/error_paper.png")
+        elif (printerAtt['printer-state-message'] == 'Printer open failure (No suitable printers found!)'):
+            show_image(real_path + "/error_printer_off.png")
+        else:
+            show_image(real_path + "/error_printer.png")
+
         return  # End here, led is Off, wait for human action
 
     if print_counter < config.max_print:

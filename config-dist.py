@@ -51,7 +51,7 @@ enable_shutdown_btn = False
 # Printing configuration
 enable_print_btn = False
 # Maximum number of prints for the same image
-max_print = 5
+max_print = 3
 
 # Debug mode
 debug_mode = False
