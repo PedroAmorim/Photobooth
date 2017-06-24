@@ -72,7 +72,7 @@ transfrom_y = config.monitor_h  # how high to scale the jpg when replaying
 offset_x = 0  # how far off to left corner to display photos
 offset_y = 0  # how far off to left corner to display photos
 print_counter = 0
-print_error = False
+print_error = 'OK'
 
 if not config.camera_landscape:
     tmp = image_h
@@ -348,7 +348,8 @@ def start_photobooth():
     show_image(real_path + "/finished.png")
 
     sleep(restart_delay)
-    show_image(real_path + "/intro.png")
+    show_intro()
+
     # turn on the LED
     GPIO.output(led_pin, True)
     if not print_error:
@@ -411,15 +412,15 @@ def print_image():
     printers = conn.getPrinters()
     printer_name = printers.keys()[0]
 
-    if print_error:
+    if print_error != 'OK':
         log("Printer restart after error")
         # restart printer
         conn.disablePrinter(printer_name)
         sleep(2)
         conn.enablePrinter(printer_name)
-        print_error = False
+        print_error = 'OK'
         GPIO.output(print_led_pin, True)  # Turn LED on
-        show_image(real_path + "/intro.png")  # Reset screen
+        show_intro()  # Reset screen
         return  # End here, printer should restart jobs pendings on the queue
 
     # Check if printer status is available
@@ -431,16 +432,8 @@ def print_image():
     if (printerAtt['printer-state'] == 5):
         log("Printer error : (" + str(printerAtt['printer-state']) + ") " + printerAtt['printer-state-message'])
         make_led_blinking(print_led_pin, 6, 0.15)  # LED blinking
-        print_error = True
-        if (printerAtt['printer-state-message'] == 'Ribbon depleted!'):
-            show_image(real_path + "/error_ink.png")
-        elif (printerAtt['printer-state-message'] == 'Paper feed problem!' or printerAtt['printer-state-message'] == 'No paper tray loaded, aborting!'):
-            show_image(real_path + "/error_paper.png")
-        elif (printerAtt['printer-state-message'] == 'Printer open failure (No suitable printers found!)'):
-            show_image(real_path + "/error_printer_off.png")
-        else:
-            show_image(real_path + "/error_printer.png")
-
+        print_error = printerAtt['printer-state-message']
+        show_intro()
         return  # End here, led is Off, wait for human action
 
     if print_counter < config.max_print:
@@ -458,6 +451,21 @@ def print_image():
     else:
         make_led_blinking(print_led_pin, 3, 0.15)  # LED blinking, at the end LED is off
         log("You have reach print quota for image " + " : " + files[0])
+
+
+def show_intro():
+    global print_error
+
+    if (print_error == 'OK'):
+        show_image(real_path + "/intro.png")
+    elif (print_error == 'Ribbon depleted!'):
+        show_image(real_path + "/error_ink.png")
+    elif (print_error == 'Paper feed problem!' or print_error == 'No paper tray loaded, aborting!'):
+        show_image(real_path + "/error_paper.png")
+    elif (print_error == 'Printer open failure (No suitable printers found!)'):
+        show_image(real_path + "/error_printer_off.png")
+    else:
+        show_image(real_path + "/error_printer.png")
 
 
 def log(text):
