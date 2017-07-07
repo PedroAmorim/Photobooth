@@ -348,11 +348,12 @@ def start_photobooth():
     show_image(real_path + "/finished.png")
 
     sleep(restart_delay)
+
     show_intro()
 
     # turn on the LED
     GPIO.output(led_pin, True)
-    if not print_error:
+    if print_error == 'OK':
         GPIO.output(print_led_pin, True)
 
 
