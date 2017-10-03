@@ -281,8 +281,8 @@ def start_photobooth():
 
     log("Taking pics")
 
-    # get the current date and time for the start of the filename
-    now = time.strftime("%Y-%m-%d-%H-%M-%S")
+    # get the current timestamp, and remove milliseconds
+    now = str(time.time()).split('.')[0]
 
     try:  # take the photos
         for i in range(1, total_pics + 1):
