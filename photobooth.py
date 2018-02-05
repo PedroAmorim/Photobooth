@@ -59,13 +59,13 @@ image_h = 525
 image_w = 700
 margin = 50
 
-# Output image ration 3/2
+# Printed image ratio 3/2
 output_h = 1200
 output_w = 1800
 
-#########################
-# Variables that Change #
-#########################
+#############
+# Variables #
+#############
 # Do not change these variables, as the code will change it anyway
 transform_x = config.monitor_w  # how wide to scale the jpg when replaying
 transfrom_y = config.monitor_h  # how high to scale the jpg when replaying
@@ -89,6 +89,7 @@ if not config.camera_landscape:
 # Other Config #
 ################
 real_path = os.path.dirname(os.path.realpath(__file__))
+output_path = config.file_path
 
 # GPIO setup
 GPIO.setmode(GPIO.BCM)
@@ -190,6 +191,7 @@ def set_demensions(img_w, img_h):
         print "offset_y: " + str(offset_y)
         print "offset_x: " + str(offset_x)
 
+
 def set_demensions_preview(img_w, img_h):
     """
     @brief      Set variables to properly display the image on screen at right ratio
@@ -197,7 +199,7 @@ def set_demensions_preview(img_w, img_h):
     @param      img_w  The image w
     @param      img_h  The image h
     """
-     # connect to global vars
+    # connect to global vars
     global transform_y, transform_x, offset_y, offset_x
 
     # based on output screen resolution, calculate how to display
@@ -207,13 +209,13 @@ def set_demensions_preview(img_w, img_h):
         # Use horizontal black bars
         transform_y = ratio_h
         transform_x = config.monitor_w
-        offset_y = (config.monitor_h - ratio_h * 3/4) / 2
+        offset_y = (config.monitor_h - ratio_h * 3 / 4) / 2
         offset_x = 0
     elif (ratio_h > config.monitor_h):
         # Use vertical black bars
         transform_x = (config.monitor_h * img_w) / img_h
         transform_y = config.monitor_h
-        offset_x = (config.monitor_w - transform_x *3/4) / 2
+        offset_x = (config.monitor_w - transform_x * 3 / 4) / 2
         offset_y = 0
     else:
         # No need for black bars as photo ratio equals screen ratio
@@ -229,6 +231,7 @@ def set_demensions_preview(img_w, img_h):
         print "transform_y: " + str(transform_y)
         print "offset_y: " + str(offset_y)
         print "offset_x: " + str(offset_x)
+
 
 def show_image(image_path):
     """
@@ -251,12 +254,13 @@ def show_image(image_path):
     screen.blit(img, (offset_x, offset_y))
     pygame.display.flip()
 
+
 def show_image_print(image_path):
     """
     @brief      Display the image being printed
     @param      image_path  The image path
     """
-    
+
     show_image(real_path + "/printing.png")
 
     # Load image
@@ -264,13 +268,14 @@ def show_image_print(image_path):
 
     # set pixel dimensions based on image
     set_demensions_preview(img.get_width(), img.get_height())
-    
+
     # rescale the image to fit the current display
-    img = pygame.transform.scale(img, (transform_x*3/4, transfrom_y*3/4))
+    img = pygame.transform.scale(img, (transform_x * 3 / 4, transfrom_y * 3 / 4))
     screen.blit(img, (offset_x, offset_y))
     pygame.display.flip()
     sleep(restart_delay)
     show_intro()
+
 
 def clear_screen():
     """
@@ -427,7 +432,8 @@ def shutdown(channel):
     pygame.quit()
     GPIO.cleanup()
     os.system("sudo halt -p")
-    
+
+
 def photobooth_image(now):
 
     # Load images
@@ -470,7 +476,7 @@ def print_image():
     conn = cups.Connection()
     printers = conn.getPrinters()
     printer_name = printers.keys()[0]
-    
+
     if print_error != 'OK':
         log("Printer restart after error")
         # restart printer
@@ -496,12 +502,12 @@ def print_image():
         return  # End here, led is Off, wait for human action
 
     # get last image
-    files = filter(os.path.isfile, glob.glob(config.file_path + "photobooth/*")) 
+    files = filter(os.path.isfile, glob.glob(config.file_path + "photobooth/*"))
     files.sort(key=lambda x: os.path.getmtime(x), reverse=True)
-        
+
     if print_counter < config.max_print:
         print_counter += 1  # increase counter
-        GPIO.output(print_led_pin, False)  
+        GPIO.output(print_led_pin, False)
         # Launch printing
         if not config.debug_mode:
             conn.printFile(printer_name, files[0], "PhotoBooth", {})
