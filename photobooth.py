@@ -148,7 +148,7 @@ def clear_pics(channel):
 
 def set_demensions(img_w, img_h):
     """
-    @brief      Set variables to properly display the image on screen at right ratio
+    @brief      Set variables to properly display the image on full screen at right ratio
                 Note this only works when in booting in desktop mode.
                 When running in terminal, the size is not correct (it displays small).
                 Why?
@@ -190,6 +190,45 @@ def set_demensions(img_w, img_h):
         print "offset_y: " + str(offset_y)
         print "offset_x: " + str(offset_x)
 
+def set_demensions_preview(img_w, img_h):
+    """
+    @brief      Set variables to properly display the image on screen at right ratio
+
+    @param      img_w  The image w
+    @param      img_h  The image h
+    """
+     # connect to global vars
+    global transform_y, transform_x, offset_y, offset_x
+
+    # based on output screen resolution, calculate how to display
+    ratio_h = (config.monitor_w * img_h) / img_w
+
+    if (ratio_h < config.monitor_h):
+        # Use horizontal black bars
+        transform_y = ratio_h
+        transform_x = config.monitor_w
+        offset_y = (config.monitor_h - ratio_h * 3/4) / 2
+        offset_x = 0
+    elif (ratio_h > config.monitor_h):
+        # Use vertical black bars
+        transform_x = (config.monitor_h * img_w) / img_h
+        transform_y = config.monitor_h
+        offset_x = (config.monitor_w - transform_x *3/4) / 2
+        offset_y = 0
+    else:
+        # No need for black bars as photo ratio equals screen ratio
+        transform_x = config.monitor_w
+        transform_y = config.monitor_h
+        offset_y = offset_x = 0
+
+    if config.debug_mode:
+        log("Screen resolution debug:")
+        print str(img_w) + " x " + str(img_h)
+        print "ratio_h: " + str(ratio_h)
+        print "transform_x: " + str(transform_x)
+        print "transform_y: " + str(transform_y)
+        print "offset_y: " + str(offset_y)
+        print "offset_x: " + str(offset_x)
 
 def show_image(image_path):
     """
@@ -212,6 +251,26 @@ def show_image(image_path):
     screen.blit(img, (offset_x, offset_y))
     pygame.display.flip()
 
+def show_image_print(image_path):
+    """
+    @brief      Display the image being printed
+    @param      image_path  The image path
+    """
+    
+    show_image(real_path + "/printing.png")
+
+    # Load image
+    img = pygame.image.load(image_path)
+
+    # set pixel dimensions based on image
+    set_demensions_preview(img.get_width(), img.get_height())
+    
+    # rescale the image to fit the current display
+    img = pygame.transform.scale(img, (transform_x*3/4, transfrom_y*3/4))
+    screen.blit(img, (offset_x, offset_y))
+    pygame.display.flip()
+    sleep(restart_delay)
+    show_intro()
 
 def clear_screen():
     """
@@ -368,8 +427,7 @@ def shutdown(channel):
     pygame.quit()
     GPIO.cleanup()
     os.system("sudo halt -p")
-
-
+    
 def photobooth_image(now):
 
     # Load images
@@ -412,7 +470,7 @@ def print_image():
     conn = cups.Connection()
     printers = conn.getPrinters()
     printer_name = printers.keys()[0]
-
+    
     if print_error != 'OK':
         log("Printer restart after error")
         # restart printer
@@ -437,14 +495,17 @@ def print_image():
         show_intro()
         return  # End here, led is Off, wait for human action
 
+    # get last image
+    files = filter(os.path.isfile, glob.glob(config.file_path + "photobooth/*")) 
+    files.sort(key=lambda x: os.path.getmtime(x), reverse=True)
+        
     if print_counter < config.max_print:
         print_counter += 1  # increase counter
-        GPIO.output(print_led_pin, False)
-        # get last image
-        files = filter(os.path.isfile, glob.glob(config.file_path + "photobooth/*"))
-        files.sort(key=lambda x: os.path.getmtime(x), reverse=True)
+        GPIO.output(print_led_pin, False)  
         # Launch printing
-        conn.printFile(printer_name, files[0], "PhotoBooth", {})
+        if not config.debug_mode:
+            conn.printFile(printer_name, files[0], "PhotoBooth", {})
+        show_image_print(files[0])
         log("Launch printing request on " + printer_name + " : " + files[0])
         sleep(1)
         # Turn LED on
