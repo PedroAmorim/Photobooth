@@ -73,6 +73,7 @@ offset_x = 0  # how far off to left corner to display photos
 offset_y = 0  # how far off to left corner to display photos
 print_counter = 0
 print_error = 'OK'
+last_image_save = 'no_file'
 
 if not config.camera_landscape:
     tmp = image_h
@@ -89,7 +90,35 @@ if not config.camera_landscape:
 # Other Config #
 ################
 real_path = os.path.dirname(os.path.realpath(__file__))
-output_path = config.file_path
+
+
+def log(text):
+    print time.strftime('%Y/%m/%d %H:%M:%S') + " | " + text
+
+
+###########################
+# Init output directories #
+###########################
+# Check directory is writable
+now = str(time.time()).split('.')[0]  # get the current timestamp, and remove milliseconds
+if (not os.path.exists(config.file_path)):
+    log("ERROR config.file_path not writeable fallback to SD : " + config.file_path)
+    output_path = real_path + "/" + now + "/"
+else:
+    output_path = config.file_path + now + "/"
+
+output_path_photobooth = output_path + "photobooth/"
+# Create directories
+os.makedirs(output_path_photobooth, 0777)
+
+if (not os.access(output_path_photobooth, os.W_OK)):
+    log("ERROR output_path_photobooth not writeable: " + output_path_photobooth)
+    sys.exit()
+
+
+##############
+# Initialize #
+##############
 
 # GPIO setup
 GPIO.setmode(GPIO.BCM)
@@ -113,6 +142,7 @@ if not config.debug_mode:
 
 capture = pygame.mixer.Sound(real_path + "/camera-shutter-sound.wav")
 
+
 #############
 # Functions #
 #############
@@ -133,7 +163,7 @@ def clear_pics(channel):
     @brief      delete files in pics folder
     @param      channel  The channel
     """
-    files = glob.glob(config.file_path + '*')
+    files = glob.glob(output_path + '*')
     for f in files:
         os.remove(f)
     # light the lights in series to show completed
@@ -292,7 +322,7 @@ def display_pics(jpg_group):
     """
     for i in range(0, replay_cycles):  # show pics a few times
         for i in range(1, total_pics + 1):  # show each pic
-            show_image(config.file_path + jpg_group + "-0" + str(i) + ".jpg")
+            show_image(output_path + jpg_group + "-0" + str(i) + ".jpg")
             sleep(replay_delay)  # pause
 
 
@@ -350,7 +380,7 @@ def start_photobooth():
 
     try:  # take the photos
         for i in range(1, total_pics + 1):
-            filename = config.file_path + now + '-0' + str(i) + '.jpg'
+            filename = output_path + now + '-0' + str(i) + '.jpg'
 
             show_image(real_path + "/pose" + str(i) + ".png")
             sleep(capture_delay)  # pause in-between shots
@@ -386,8 +416,8 @@ def start_photobooth():
         log("Creating an animated gif")
         # make an animated gif
         graphicsmagick = "gm convert -delay " + \
-            str(gif_delay) + " " + config.file_path + now + \
-            "*.jpg " + config.file_path + now + ".gif"
+            str(gif_delay) + " " + output_path + now + \
+            "*.jpg " + output_path + now + ".gif"
         os.system(graphicsmagick)  # make the .gif
 
     log("Creating a photo booth picture")
@@ -436,12 +466,15 @@ def shutdown(channel):
 
 def photobooth_image(now):
 
+    # connect to global vars
+    global last_image_save
+
     # Load images
     bgimage = pygame.image.load(real_path + "/bgimage.png")
-    image1 = pygame.image.load(config.file_path + now + "-01.jpg")
-    image2 = pygame.image.load(config.file_path + now + "-02.jpg")
-    image3 = pygame.image.load(config.file_path + now + "-03.jpg")
-    image4 = pygame.image.load(config.file_path + now + "-04.jpg")
+    image1 = pygame.image.load(output_path + now + "-01.jpg")
+    image2 = pygame.image.load(output_path + now + "-02.jpg")
+    image3 = pygame.image.load(output_path + now + "-03.jpg")
+    image4 = pygame.image.load(output_path + now + "-04.jpg")
 
     # Rotate Background
     if not config.camera_landscape:
@@ -460,12 +493,14 @@ def photobooth_image(now):
     bgimage.blit(image3, (margin, margin * 2 + image_h))
     bgimage.blit(image4, (margin * 2 + image_w, margin * 2 + image_h))
 
-    file_path_photobooth = config.file_path + "photobooth/"
     # Check directory is writable
-    if (os.access(file_path_photobooth, os.W_OK)):
-        pygame.image.save(bgimage, file_path_photobooth + now + ".jpg")
+    if (os.access(output_path_photobooth, os.W_OK)):
+        last_image_save = output_path_photobooth + now + ".jpg"
+        pygame.image.save(bgimage, last_image_save)
+        if config.debug_mode:
+            log("INFO last image save: " + last_image_save)
     else:
-        log("ERROR path not writeable: " + file_path_photobooth)
+        log("ERROR path not writeable: " + output_path_photobooth)
 
 
 def print_image():
@@ -501,24 +536,22 @@ def print_image():
         show_intro()
         return  # End here, led is Off, wait for human action
 
-    # get last image
-    files = filter(os.path.isfile, glob.glob(config.file_path + "photobooth/*"))
-    files.sort(key=lambda x: os.path.getmtime(x), reverse=True)
-
-    if print_counter < config.max_print:
+    if not os.path.isfile(last_image_save):
+        log("No image " + " : " + last_image_save)
+    elif print_counter < config.max_print:
         print_counter += 1  # increase counter
         GPIO.output(print_led_pin, False)
         # Launch printing
         if not config.debug_mode:
-            conn.printFile(printer_name, files[0], "PhotoBooth", {})
-        show_image_print(files[0])
-        log("Launch printing request on " + printer_name + " : " + files[0])
+            conn.printFile(printer_name, last_image_save, "PhotoBooth", {})
+        show_image_print(last_image_save)
+        log("Launch printing request on " + printer_name + " : " + last_image_save)
         sleep(1)
         # Turn LED on
         GPIO.output(print_led_pin, True)
     else:
         make_led_blinking(print_led_pin, 3, 0.15)  # LED blinking, at the end LED is off
-        log("You have reach print quota for image " + " : " + files[0])
+        log("You have reach print quota for image " + " : " + last_image_save)
 
 
 def show_intro():
@@ -536,8 +569,6 @@ def show_intro():
         show_image(real_path + "/error_printer.png")
 
 
-def log(text):
-    print time.strftime('%Y/%m/%d %H:%M:%S') + " | " + text
 
 ##################
 #  Main Program  #
