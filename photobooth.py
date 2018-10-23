@@ -471,6 +471,7 @@ def photobooth_image(now):
 
     # Load images
     bgimage = pygame.image.load(real_path + "/bgimage.png")
+    fgimage = pygame.image.load(real_path + "/fgimage.png")
     image1 = pygame.image.load(output_path + now + "-01.jpg")
     image2 = pygame.image.load(output_path + now + "-02.jpg")
     image3 = pygame.image.load(output_path + now + "-03.jpg")
@@ -479,9 +480,12 @@ def photobooth_image(now):
     # Rotate Background
     if not config.camera_landscape:
         bgimage = pygame.transform.rotate(bgimage, 270)
+        fgimage = pygame.transform.rotate(fgimage, 270)
 
     # Resize images
     bgimage = pygame.transform.scale(bgimage, (output_w, output_h))
+    fgimage = pygame.transform.scale(fgimage, (output_w, output_h))
+
     image1 = pygame.transform.scale(image1, (image_w, image_h))
     image2 = pygame.transform.scale(image2, (image_w, image_h))
     image3 = pygame.transform.scale(image3, (image_w, image_h))
@@ -492,6 +496,7 @@ def photobooth_image(now):
     bgimage.blit(image2, (margin * 2 + image_w, margin))
     bgimage.blit(image3, (margin, margin * 2 + image_h))
     bgimage.blit(image4, (margin * 2 + image_w, margin * 2 + image_h))
+    bgimage.blit(fgimage)
 
     # Check directory is writable
     if (os.access(output_path_photobooth, os.W_OK)):
