@@ -509,6 +509,9 @@ def photobooth_image(now):
 
 
 def print_image():
+
+    log("Start print_image() ----------")
+
     # connect to global vars
     global print_counter, print_error
 
@@ -586,15 +589,15 @@ if config.clear_on_startup:
 
 # Add event listener to catch shutdown request
 if config.enable_shutdown_btn:
-    GPIO.add_event_detect(shutdown_btn_pin, GPIO.FALLING, callback=shutdown, bouncetime=config.debounce)
+    GPIO.add_event_detect(shutdown_btn_pin, GPIO.RISING, callback=shutdown, bouncetime=config.debounce)
 
 # If printing enable, add event listener on print button
 if config.enable_print_btn:
-    GPIO.add_event_detect(print_btn_pin, GPIO.FALLING, bouncetime=config.debounce)
+    GPIO.add_event_detect(print_btn_pin, GPIO.RISING, bouncetime=config.debounce)
 
 # Setup button start_photobooth
 # DON'T USE THREADED CALLBACKS
-GPIO.add_event_detect(btn_pin, GPIO.FALLING, bouncetime=config.debounce)
+GPIO.add_event_detect(btn_pin, GPIO.RISING, bouncetime=config.debounce)
 
 log("Photo booth app running...")
 
@@ -612,15 +615,21 @@ while True:
     for event in pygame.event.get():
         # pygame.QUIT is sent when the user clicks the window's "X" button
         if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
+            log("QUIT event or K_ESCAPE")
             sys.exit()
         # Start photobooth with key "space"
         elif event.type == KEYDOWN and event.key == K_SPACE:
+            log("---------- KEYDOWN K_SPACE ----------- ")
             start_photobooth()
         # Print last image with key "P"
         elif event.type == KEYDOWN and event.key == K_p:
+            log("---------- KEYDOWN K_p ----------- ")
             print_image()
+
     # Detect event on start button
     if GPIO.event_detected(btn_pin):
+        log("---------- BTN photo ----------- ")
         start_photobooth()
     if config.enable_print_btn and GPIO.event_detected(print_btn_pin):
+        log("---------- BTN print ----------- ")
         print_image()
