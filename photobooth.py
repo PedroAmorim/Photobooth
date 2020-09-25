@@ -496,7 +496,7 @@ def photobooth_image(now):
     bgimage.blit(image2, (margin * 2 + image_w, margin))
     bgimage.blit(image3, (margin, margin * 2 + image_h))
     bgimage.blit(image4, (margin * 2 + image_w, margin * 2 + image_h))
-    bgimage.blit(fgimage)
+    bgimage.blit(fgimage, (0, 0))
 
     # Check directory is writable
     if (os.access(output_path_photobooth, os.W_OK)):
